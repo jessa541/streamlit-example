@@ -1,40 +1,40 @@
-import altair as alt
-import numpy as np
 import pandas as pd
+import plotly.express as px
 import streamlit as st
 
-"""
-# Welcome to Streamlit!
+st.set_page_config(page_title='Extinction Dashboard',
+                   page_icon='🌎',
+                   layout='wide')
 
-Edit `/streamlit_app.py` to customize this app to your heart's desire :heart:.
-If you have any questions, checkout our [documentation](https://docs.streamlit.io) and [community
-forums](https://discuss.streamlit.io).
+df = pd.read_csv('combined_file.csv')
 
-In the meantime, below is an example of what you can do with just a few lines of code:
-"""
+# Clean the data in "Subtotal (threatened spp.)" column
+df['Subtotal (threatened spp.)'] = df['Subtotal (threatened spp.)'].str.replace(',', '')
 
-num_points = st.slider("Number of points in spiral", 1, 10000, 1100)
-num_turns = st.slider("Number of turns in spiral", 1, 300, 31)
+# Convert the cleaned data to integer
+df['Subtotal (threatened spp.)'] = pd.to_numeric(df['Subtotal (threatened spp.)'])
 
-indices = np.linspace(0, 1, num_points)
-theta = 2 * np.pi * num_turns * indices
-radius = indices
+#sidebar
+st.sidebar.header('Filter Here:')
+country = st.sidebar.multiselect(
+    'Select Country:',
+    options=df['Name'].unique(),
+    default=df['Name'].unique()
+)
 
-x = radius * np.cos(theta)
-y = radius * np.sin(theta)
+df_selection = df.query(
+    'Name == @country'
+)
 
-df = pd.DataFrame({
-    "x": x,
-    "y": y,
-    "idx": indices,
-    "rand": np.random.randn(num_points),
-})
+#Mainpage
+st.title(':earth_africa: Extinction Dashboard')
+st.markdown('##')
 
-st.altair_chart(alt.Chart(df, height=700, width=700)
-    .mark_point(filled=True)
-    .encode(
-        x=alt.X("x", axis=None),
-        y=alt.Y("y", axis=None),
-        color=alt.Color("idx", legend=None, scale=alt.Scale()),
-        size=alt.Size("rand", legend=None, scale=alt.Scale(range=[1, 150])),
-    ))
+#KPIs
+total_threatened = df_selection["Subtotal (threatened spp.)"].sum()
+
+left_column, middle_column, right_column = st.columns(3)
+with left_column:
+    st.subheader(f'Total Threatened Species: {total_threatened}')
+
+st.markdown('---')
